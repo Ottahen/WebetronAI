@@ -19,7 +19,7 @@ It works out of the box with free tools, and you can optionally plug in your Ope
 | `cli.py` | Command-line interface |
 | `app.py` | Streamlit web interface |
 | `requirements.txt` | Python dependencies |
-| `.env.example` | Example environment variables |
+| `.env.example` | Example environmental variables |
 | `example.py` | Programmatic usage example |
 | `api.py` | FastAPI REST API |
 
