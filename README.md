@@ -6,6 +6,7 @@ A fully functional Python AI assistant that:
 2. **Searches the web** via DuckDuckGo (a Google alternative that works without API keys).
 3. **Scrapes the top web pages** and extracts readable text.
 4. **Synthesizes a cited answer** using OpenAI (optional) or a local extractive summarizer.
+5. trry it live: https://workable-website--chapagainkhuma4.replit.app/
 
 It works out of the box with free tools, and you can optionally plug in your OpenAI API key for more natural, human-like answers.
 
