@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLUED AI</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bpmf+Zihi+Kai+Std&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Markdown + LaTeX rendering for chat answers -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.10/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.10/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.10/contrib/auto-render.min.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        clued: {
+                            bg: '#F9F8F6',
+                            sidebar: '#F9F8F6',
+                            text: '#191919',
+                            muted: '#B2B0A9',
+                            accent: '#F97316',
+                            accentHover: '#EA580C',
+                            accentMuted: '#FFF7ED',
+                            border: '#E6E4DF',
+                            hover: '#EFECE6'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Georgia', 'ui-serif', 'serif'],
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #F9F8F6; color: #191919; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .brutal-wrapper {
+            position: absolute; inset: 0; z-index: 50; background: #F9F8F6;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .wireframe-container {
+            position: relative; width: 100%; max-width: 700px; height: 400px;
+            border: 3px solid #000; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 40px; background: #F9F8F6;
+        }
+        .handle { position: absolute; width: 16px; height: 16px; background: #F9F8F6; border: 3px solid #000; }
+        .handle.top-left { top: -9px; left: -9px; }
+        .handle.top-right { top: -9px; right: -9px; }
+        .handle.bottom-left { bottom: -9px; left: -9px; }
+        .handle.bottom-right { bottom: -9px; right: -9px; }
+        .shape-square { width: 14px; height: 14px; background: #000; }
+        .shape-circle { width: 15px; height: 15px; background: #000; border-radius: 50%; }
+        .shape-triangle { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 14px solid #000; }
+        .input-group { display: flex; width: 100%; max-width: 520px; background: #fff; border: 3px solid #000; box-shadow: 10px 10px 0 0 #000; margin: 0 auto; }
+        .text-area { flex-grow: 1; padding: 12px 24px; display: flex; flex-direction: column; justify-content: center; }
+        .text-area label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .text-area input { border: none; outline: none; font-size: 28px; font-weight: 700; width: 100%; color: #000; background: transparent; }
+        .submit-button { background: #9DFF00; border: none; border-left: 3px solid #000; padding: 0 30px; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .submit-button:hover { background: #9de600; }
+        .bpmf-zihi-kai-std-regular { font-family: "Bpmf Zihi Kai Std", sans-serif; font-weight: 400; font-style: normal; }
+        .outfit-bold { font-family: "Outfit", sans-serif; font-weight: 800; font-style: normal; }
+        .outfit-med { font-family: "Outfit", sans-serif; font-weight: 500; font-style: normal; }
+    </style>
+</head>
+<body class="h-screen w-screen flex overflow-hidden antialiased select-none font-sans text-[15px]">
+
+    <aside class="w-[245px] h-full flex flex-col justify-between p-4 border-r border-clued-border/80 shrink-0 bg-clued-sidebar">
+        <div class="flex flex-col space-y-5">
+            <div class="flex items-center justify-between px-2 pt-1">
+                <span class="text-[22px] font-serif font-medium tracking-tight cursor-pointer hover:opacity-80 transition-opacity">CLUED</span>
+            </div>
+
+            <button id="new-chat-btn" class="flex items-center space-x-2.5 text-clued-accent bg-transparent border border-transparent hover:bg-clued-hover/80 active:scale-[0.98] px-3 py-2 rounded-xl transition-all duration-200 w-full text-left font-medium group">
+                <div class="bg-clued-accentMuted text-clued-accent p-1 rounded-full flex items-center justify-center group-hover:bg-clued-accent group-hover:text-white transition-colors duration-200">
+                    <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3px]"></i>
+                </div>
+                <span class="font-semibold text-[14px]">New chat</span>
+            </button>
+
+            <nav class="space-y-0.5 font-medium text-[14px]">
+                <a href="#" class="flex items-center space-x-3 text-clued-text/80 bg-clued-hover/40 border border-clued-border/30 px-3 py-2 rounded-xl transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+                    <i data-lucide="message-square" class="w-4 h-4 text-clued-accent stroke-[2]"></i>
+                    <span class="font-medium text-clued-text">Chats</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-clued-text/70 hover:bg-clued-hover/70 hover:text-clued-text px-3 py-2 rounded-xl transition-all duration-200 border border-transparent">
+                    <i data-lucide="folder" class="w-4 h-4 text-clued-text/50 stroke-[1.8]"></i>
+                    <span>Projects</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-clued-text/70 hover:bg-clued-hover/70 hover:text-clued-text px-3 py-2 rounded-xl transition-all duration-200 border border-transparent">
+                    <i data-lucide="layout-grid" class="w-4 h-4 text-clued-text/50 stroke-[1.8]"></i>
+                    <span>Artifacts</span>
+                </a>
+            </nav>
+
+            <div class="pt-2">
+                <span class="text-[11px] font-semibold text-clued-text/40 px-3 tracking-wider uppercase">Recents</span>
+                <div id="recents-list" class="mt-2 space-y-1 text-xs text-clued-text/50 px-3 italic">No chats yet</div>
+            </div>
+        </div>
+
+        <div class="relative">
+            <div id="profile-toggle" class="flex items-center justify-between p-2 rounded-xl hover:bg-clued-hover/80 border border-transparent hover:border-clued-border/40 cursor-pointer transition-all duration-200 active:scale-[0.99]">
+                <div class="flex items-center space-x-2.5">
+                    <div id="user-avatar-text" class="w-7 h-7 rounded-full bg-clued-text text-white flex items-center justify-center font-bold text-[11px] tracking-wider shadow-sm">SL</div>
+                    <div class="flex flex-col leading-none">
+                        <span id="sidebar-user-name" class="text-[13px] font-semibold text-clued-text">Sam Lee</span>
+                        <span class="text-[11px] text-clued-text/40 mt-0.5">Free plan</span>
+                    </div>
+                </div>
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-clued-text/40"></i>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full flex flex-col relative p-4 bg-clued-bg">
+
+        <div class="w-full flex justify-between items-center px-2 pt-1 shrink-0">
+            <span id="mode-banner" class="text-[12px] text-clued-text/40"></span>
+            <button id="speak-mode-note" class="p-2 border border-transparent hover:border-clued-border/50 hover:bg-clued-hover/60 active:scale-95 text-clued-text/60 hover:text-clued-text transition-all rounded-xl">
+                <svg class="w-[20px] h-[20px] opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/>
+                    <path d="M12 7v4"/>
+                    <path d="M12 16h.01"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="initial-name-screen" class="brutal-wrapper">
+            <div class="wireframe-container">
+                <div class="handle top-left"></div>
+                <div class="handle top-right"></div>
+                <div class="handle bottom-left"></div>
+                <div class="handle bottom-right"></div>
+                <div class="flex justify-end items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="shape-square"></div>
+                        <div class="shape-circle"></div>
+                        <div class="shape-triangle"></div>
+                    </div>
+                </div>
+                <div class="flex-grow flex items-center justify-center">
+                    <div class="input-group">
+                        <div class="text-area">
+                            <label class="outfit-bold">Enter Your Name</label>
+                            <input type="text" id="username" placeholder="e.g. Sam Lee" class="outfit-med">
+                        </div>
+                        <button class="submit-button" id="name-submit-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="square">
+                                <path d="M4 12h15M13 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-end items-center">
+                    <div class="flex border-[3px] border-black">
+                        <div class="swatch w-5 h-3 bg-black border-r-[3px] border-black"></div>
+                        <div class="swatch w-5 h-3 bg-[#9DFF00] border-r-[3px] border-black"></div>
+                        <div class="swatch w-5 h-3 bg-[#808cff] border-r-[3px] border-black"></div>
+                        <div class="swatch w-5 h-3 bg-[#fffaf0] border-r-[3px] border-black"></div>
+                        <div class="swatch w-5 h-3 bg-[#ff6b6b]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-interface" class="flex-1 w-full flex flex-col min-h-0 hidden">
+
+            <div id="chat-thread" class="hidden"></div>
+
+            <div id="greeting-block" class="max-w-[720px] w-full mx-auto flex flex-col items-center justify-center flex-1 space-y-6 px-4">
+                <div class="flex items-center space-x-3 text-[34px] font-serif font-normal text-clued-text tracking-tight select-none mb-1">
+                    <svg class="w-8 h-8 text-clued-accent" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                    <span id="greeting-text">What's new?</span>
+                </div>
+            </div>
+
+            <div class="max-w-[720px] w-full mx-auto px-4 pb-4 pt-2 shrink-0">
+                <div id="image-preview-row"></div>
+
+                <div class="w-full bg-white border border-clued-border rounded-[24px] p-4 flex flex-col shadow-[0_4px_24px_rgba(25,25,25,0.02)] focus-within:shadow-[0_8px_30px_rgba(25,25,25,0.04)] focus-within:border-clued-text/15 transition-all duration-300">
+                    <textarea id="chat-textarea" rows="1" placeholder="How can I help you today?" class="w-full bg-transparent border-0 text-[16px] placeholder-clued-text/35 text-clued-text resize-none focus:ring-0 leading-relaxed pr-2 max-h-[260px] no-scrollbar overflow-y-auto outline-none"></textarea>
+
+                    <div class="flex items-center justify-between pt-3 mt-3 border-t border-clued-border/40">
+                        <div class="flex items-center space-x-1 relative">
+                            <input type="file" id="image-input" accept="image/*" class="hidden">
+                            <button id="attach-btn" title="Attach an image (Atlas mode)" class="p-2 hover:bg-clued-hover text-clued-text/40 hover:text-clued-text rounded-xl transition-all active:scale-95">
+                                <i data-lucide="plus" class="w-[18px] h-[18px] stroke-[2.2]"></i>
+                            </button>
+                            <button id="settings-btn" class="p-2 hover:bg-clued-hover text-clued-text/40 hover:text-clued-text rounded-xl transition-all active:scale-95">
+                                <i data-lucide="sliders-horizontal" class="w-[17px] h-[17px] stroke-[2.2]"></i>
+                            </button>
+                            <div id="settings-panel" class="hidden">
+                                <div class="settings-row">
+                                    <span>Answer length</span>
+                                    <div class="pill-toggle" id="length-toggle">
+                                        <button data-length="concise" class="active">Concise</button>
+                                        <button data-length="detailed">Detailed</button>
+                                    </div>
+                                </div>
+                                <div class="settings-row" style="border-top:1px solid #E6E4DF; margin-top:4px; padding-top:8px; color:#B2B0A9; font-size:11px;">
+                                    <span id="mode-tagline-text">All-round research</span>
+                                </div>
+                            </div>
+
+                            <button id="imagine-btn" title="Generate an image (Atlas mode)" class="hidden items-center space-x-1.5 px-3 py-1.5 border border-clued-border/80 hover:bg-clued-hover hover:border-clued-muted/40 active:scale-[0.97] rounded-full text-[13px] font-medium text-clued-text/70 transition-all ml-1 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                                <i data-lucide="image" class="w-3.5 h-3.5 text-clued-accent stroke-[2.2]"></i>
+                                <span>Imagine</span>
+                            </button>
+
+                            <button id="mic-btn" title="Voice input" class="p-2 hover:bg-clued-hover text-clued-text/40 hover:text-clued-text rounded-xl transition-all active:scale-95">
+                                <i data-lucide="mic" class="w-[17px] h-[17px] stroke-[2.2]"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center space-x-2 relative">
+                            <div class="relative">
+                                <button id="model-dropdown-btn" class="flex items-center space-x-1 text-[13px] text-clued-text/50 hover:text-clued-text border border-transparent hover:border-clued-border/60 transition-all duration-150 font-medium py-1.5 px-2.5 rounded-xl hover:bg-clued-hover active:scale-[0.97]">
+                                    <span id="current-model" class="bpmf-zihi-kai-std-regular text-base">Webetron</span>
+                                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 opacity-60"></i>
+                                </button>
+
+                                <div id="model-menu" class="hidden absolute bottom-full right-0 mb-2 w-56 bg-white border border-clued-border/90 rounded-xl shadow-xl p-1.5 z-50 text-[13px] transition-all duration-100 transform origin-bottom-right">
+                                    <button class="model-opt w-full text-left px-3 py-2 rounded-lg hover:bg-clued-hover flex items-center justify-between transition-colors group" data-model="webetron">
+                                        <div class="flex flex-col">
+                                            <span class="bpmf-zihi-kai-std-regular text-base">Webetron</span>
+                                            <span class="text-[10px] text-clued-text/50 mt-0.5 leading-tight">All-round research</span>
+                                        </div>
+                                        <i data-lucide="check" class="w-3.5 h-3.5 text-clued-accent"></i>
+                                    </button>
+                                    <button class="model-opt w-full text-left px-3 py-2 rounded-lg hover:bg-clued-hover flex items-center justify-between transition-colors group" data-model="open">
+                                        <div class="flex flex-col">
+                                            <span class="bpmf-zihi-kai-std-regular text-base">Open</span>
+                                            <span class="text-[10px] text-clued-text/50 mt-0.5 leading-tight">Medical & health works</span>
+                                        </div>
+                                        <i data-lucide="check" class="w-3.5 h-3.5 text-clued-accent hidden"></i>
+                                    </button>
+                                    <button class="model-opt w-full text-left px-3 py-2 rounded-lg hover:bg-clued-hover flex items-center justify-between transition-colors group" data-model="atlas">
+                                        <div class="flex flex-col">
+                                            <span class="bpmf-zihi-kai-std-regular text-base">Atlas</span>
+                                            <span class="text-[10px] text-clued-text/50 mt-0.5 leading-tight">Chat, vision & image generation</span>
+                                        </div>
+                                        <i data-lucide="check" class="w-3.5 h-3.5 text-clued-accent hidden"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button id="submit-btn" class="p-1.5 bg-clued-hover text-clued-text/20 rounded-full transition-all duration-200 cursor-not-allowed border border-clued-border/40" disabled>
+                                <div class="w-[24px] h-[24px] flex items-center justify-center rounded-full bg-clued-text/5 text-clued-text/40 id-arrow-wrapper transition-all duration-200">
+                                    <i data-lucide="arrow-up" class="w-3.5 h-3.5 stroke-[3px]"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="suggestion-row" class="flex flex-wrap items-center justify-center gap-2 pt-3">
+                    <button data-prompt="Help me write an original story about..." class="suggestion-pill flex items-center space-x-2 px-3.5 py-2 border border-clued-border bg-white hover:bg-clued-hover hover:border-clued-muted/40 rounded-xl text-[13px] font-medium text-clued-text/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-150 active:scale-[0.96]">
+                        <i data-lucide="pen-line" class="w-3.5 h-3.5 text-clued-accent stroke-[2]"></i>
+                        <span>Write</span>
+                    </button>
+                    <button data-prompt="Explain a complex topic like..." class="suggestion-pill flex items-center space-x-2 px-3.5 py-2 border border-clued-border bg-white hover:bg-clued-hover hover:border-clued-muted/40 rounded-xl text-[13px] font-medium text-clued-text/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-150 active:scale-[0.96]">
+                        <i data-lucide="graduation-cap" class="w-4 h-4 text-emerald-600 stroke-[2]"></i>
+                        <span>Learn</span>
+                    </button>
+                    <button data-prompt="Help me fix or write code for..." class="suggestion-pill flex items-center space-x-2 px-3.5 py-2 border border-clued-border bg-white hover:bg-clued-hover hover:border-clued-muted/40 rounded-xl text-[13px] font-medium text-clued-text/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-150 active:scale-[0.96]">
+                        <i data-lucide="code-2" class="w-4 h-4 text-blue-600 stroke-[2]"></i>
+                        <span>Code</span>
+                    </button>
+                    <button data-prompt="Help me organize my calendar and daily..." class="suggestion-pill flex items-center space-x-2 px-3.5 py-2 border border-clued-border bg-white hover:bg-clued-hover hover:border-clued-muted/40 rounded-xl text-[13px] font-medium text-clued-text/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-150 active:scale-[0.96]">
+                        <i data-lucide="coffee" class="w-4 h-4 text-purple-600 stroke-[2]"></i>
+                        <span>Life stuff</span>
+                    </button>
+                    <button data-prompt="Give me a creative idea or experiment for..." class="suggestion-pill flex items-center space-x-2 px-3.5 py-2 border border-clued-border bg-white hover:bg-clued-hover hover:border-clued-muted/40 rounded-xl text-[13px] font-medium text-clued-text/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-150 active:scale-[0.96]">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500 stroke-[2]"></i>
+                        <span>CLUED's choice</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
